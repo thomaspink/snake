@@ -27,8 +27,9 @@
     var canvas = document.getElementById('field');
     canvas.width = canvasSize;
     canvas.height = canvasSize;
-    var game = initSnake(canvas);
-    game.start(gridSize, snakeSize);
+    var game = Snake.init(canvas);
+    console.log(Snake.Difficulty.Hard);
+    game.start(gridSize, snakeSize, Snake.Difficulty.Hard);
   </script>
 </body>
 </html>

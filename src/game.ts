@@ -15,6 +15,12 @@
     Fruit
   }
 
+  enum Difficulty {
+    Easy = 1000 / 8,
+    Medium = 1000 / 15,
+    Hard = 1000 / 30
+  }
+
   const DEFAULT_GRID_SIZE = 21;
   const DEFAULT_SNAKE_SIZE = 5;
 
@@ -96,7 +102,6 @@
   }
 
   class Game {
-
     private _field: GameField;
     private _snake: Snake | null = null;
     private _fruit: Coordinate | null = null;
@@ -105,8 +110,13 @@
     private _isAfterDrawing: boolean = true;
     private _velocityX: number = 1;
     private _velocityY: number = 0;
+    private _difficulty: Difficulty | number = Difficulty.Medium;
 
     get started() {return this._snake !== null;}
+
+    get difficulty(): Difficulty | number { return this._difficulty; }
+    set difficulty(value: Difficulty | number) { this._difficulty = value; }
+
 
     constructor(canvasElementOrId: HTMLCanvasElement | string) {
       let canvasEl: HTMLCanvasElement;
@@ -128,10 +138,12 @@
       this._draw();
     }
 
-    start(gridSize: number = DEFAULT_GRID_SIZE, snakeSize: number = DEFAULT_SNAKE_SIZE) {
+    start(gridSize: number = DEFAULT_GRID_SIZE, snakeSize: number = DEFAULT_SNAKE_SIZE,
+      difficulty: Difficulty | number = Difficulty.Medium) {
       if (this.started) {
         throw new Error(`Can't start a new game, snake is already running. Did you mean "restart"?`);
       }
+      this._difficulty = difficulty;
       this._currentGridSize = gridSize;
       this._snake = this._createSnake(snakeSize);
       this._fruit = this._createFruit();
@@ -139,9 +151,9 @@
       this._run();
     }
 
-    restart(gridSize?: number, snakeSize?: number) {
+    restart(gridSize?: number, snakeSize?: number, difficulty?: Difficulty | number) {
       this.stop();
-      this.start(gridSize, snakeSize);
+      this.start(gridSize, snakeSize, difficulty);
     }
 
     stop() {
@@ -205,7 +217,7 @@
       if (collision === Collision.Snake) {
         this._softStop();
       } else {
-        this._runTimer = setTimeout(() => this._run(), 1000 / 15);
+        this._runTimer = setTimeout(() => this._run(), this.difficulty);
       }
     }
 
@@ -293,6 +305,12 @@
     }
   }
 
-  global.initSnake = (canvasElementOrId: HTMLCanvasElement | string, gridSize?: number): Game =>
-    new Game(canvasElementOrId);
+  global.Snake = {
+    Difficulty: Difficulty,
+    init: (canvasElementOrId: HTMLCanvasElement | string, gridSize?: number): Game =>
+      new Game(canvasElementOrId),
+    start: (game: Game, gridSize?: number, snakeSize?: number, difficulty?: Difficulty | number) =>
+      game.start(gridSize, snakeSize, difficulty),
+    stop: (game: Game) => game.stop()
+  }
 })(window, document);
