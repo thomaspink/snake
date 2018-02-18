@@ -1,5 +1,6 @@
 (function(global: any, doc: Document) {
 
+  /** Need key codes */
   enum KeyCodes {
     ArrowLeft = 37,
     ArrowUp = 38,
@@ -9,12 +10,14 @@
     Enter = 13
   }
 
+  /** Various collition types */
   enum Collision {
     None,
     Snake,
     Fruit
   }
 
+  /** Predefined Difficulties */
   enum Difficulty {
     Easy = 1000 / 8,
     Medium = 1000 / 15,
@@ -24,22 +27,45 @@
   const DEFAULT_GRID_SIZE = 21;
   const DEFAULT_SNAKE_SIZE = 5;
 
+  /** Represents a coordinate containing x and y position */
   class Coordinate {
     constructor(public x: number, public y: number) {}
+
+    /** Checks whether two x/y coordinates match */
+    match(other: {x: number, y: number}): boolean;
+    /** Checks whether the coordinate object matches x/y values */
+    match(x: number, y: number): boolean;
+    match(coordinateOrXValue: {x: number, y: number} | number, y?: number): boolean {
+      if (typeof coordinateOrXValue === 'number' && typeof y === 'number') {
+        return this.x === coordinateOrXValue && this.y === y;
+      } else if (typeof coordinateOrXValue === 'object') {
+        return this.x === coordinateOrXValue.x && this.y === coordinateOrXValue.y;
+      }
+      throw `Can not match coordinates, invalid argumets provided`;
+    }
   }
 
+  /** Represents a snake including all of the position of its cells */
   class Snake {
-
     get head() {return this.trail[0] || null;}
 
     constructor(public trail: Coordinate[]) {}
 
+    /**
+     * Moves the snake on cell to the provided position by prepending
+     * a new cell to the trail and optionally removing the last cell
+     * if the snake does not grow (when eating fruits)
+     */
     move(position: Coordinate, shouldGrow: boolean = false) {
       if (!shouldGrow) this.trail.pop();
       this.trail.unshift(position);
     }
   }
 
+  /**
+   * Represents the field/canvas and the drawing mechanics.
+   * This class only talks to the canvas element.
+   */
   class GameField {
     private _ctx: CanvasRenderingContext2D;
     private _canvas: HTMLCanvasElement;
@@ -59,11 +85,13 @@
 
       this._drawBackground(gridSize);
 
+      // Draw the fruit
       if (fruit && gridSize) {
         ctx.fillStyle = '#ACA8FE';
         ctx.fillRect(fruit.x * cellW, fruit.y * cellH, cellW, cellH);
       }
 
+      // Draw the snake
       if (snake && gridSize) {
         const trail = snake.trail;
         ctx.fillStyle = '#92da92';
@@ -74,21 +102,21 @@
 
     }
 
+    /** Draw the background (bg-color and grid) */
     private _drawBackground(gridSize?: number) {
       const ctx = this._ctx;
       const cWidth = this._canvas.width;
       const cHeight = this._canvas.height;
 
-      // Draw the background
+      // Draw the background color
       ctx.fillStyle = '#222930';
       ctx.fillRect(0, 0, cWidth, cHeight);
 
+      // Draw a grid
       ctx.fillStyle = '#1b2125';
-
       if (gridSize) {
         const w = cWidth / gridSize;
         const h = cHeight / gridSize;
-        const i = 0;
         for (let i = 0; i < gridSize; i++) {
           for (let j = 0; j < gridSize; j++) {
             if ((i + j) % 2 === 0) {
@@ -97,10 +125,13 @@
           }
         }
       }
-
     }
   }
 
+  /**
+   * Represents the game itself. Includes logic for creating and moving the snake,
+   * the game loop and so on. Talks to the GameField for drawing.
+   */
   class Game {
     private _field: GameField;
     private _snake: Snake | null = null;
@@ -112,8 +143,10 @@
     private _velocityY: number = 0;
     private _difficulty: Difficulty | number = Difficulty.Medium;
 
+    /** Whether a game has been started */
     get started() {return this._snake !== null;}
 
+    /** Difficulty of the game based on the time of the game loop (eg. 1000/15ms) */
     get difficulty(): Difficulty | number { return this._difficulty; }
     set difficulty(value: Difficulty | number) { this._difficulty = value; }
 
@@ -127,17 +160,21 @@
       }
 
       if (!(canvasEl instanceof HTMLCanvasElement)) {
-        throw new Error(`No Canvas for Snake :(`);
+        throw new Error(`No Canvas provided for Snake :(`);
       }
 
+      // Create a new GameField and provide the canvas element
       const gameField = new GameField(canvasEl);
       this._field = gameField;
 
+      // Listen to key events on the document
       doc.addEventListener('keydown', ev => this._handleKeydown(ev));
 
+      // Do an inital draw to display the grid and the background
       this._draw();
     }
 
+    /** Starts a new game */
     start(gridSize: number = DEFAULT_GRID_SIZE, snakeSize: number = DEFAULT_SNAKE_SIZE,
       difficulty: Difficulty | number = Difficulty.Medium) {
       if (this.started) {
@@ -151,11 +188,13 @@
       this._run();
     }
 
+    /** Restart the game */
     restart(gridSize?: number, snakeSize?: number, difficulty?: Difficulty | number) {
       this.stop();
       this.start(gridSize, snakeSize, difficulty);
     }
 
+    /** Stops and resets the game that is currently running */
     stop() {
       if (this.started) {
         throw new Error(`Can't stop, no game is running!`);
@@ -163,6 +202,7 @@
       this._softStop();
     }
 
+    /** Stops and resets the game without checking if a game is running  */
     private _softStop() {
       if (this._runTimer) clearTimeout(this._runTimer);
       this._runTimer = null;
@@ -170,6 +210,7 @@
       this._fruit = null;
     }
 
+    /** Handle Keydown events and adjust snakes velocity */
     private _handleKeydown(event: KeyboardEvent) {
       switch (event.keyCode) {
         case KeyCodes.ArrowUp:
@@ -199,6 +240,7 @@
       }
     }
 
+    /** Game loop, also handles code optimized draw calls. */
     private _run() {
       if (!this.started) return;
       if (this._isAfterDrawing) {
@@ -221,6 +263,7 @@
       }
     }
 
+    /** Moves the snake forward based on the velocity values */
     private _moveSnake(shouldGrow?: boolean) {
       let posX = this._snake.head.x;
       let posY = this._snake.head.y;
@@ -237,6 +280,7 @@
       this._snake.move(new Coordinate(posX, posY), shouldGrow);
     }
 
+    /** Checks for collisions with the snake itself or the fruit */
     private _checkCollision(): Collision {
       const trail = this._snake.trail;
       const size = trail.length;
@@ -244,12 +288,13 @@
       const fruit = this._fruit;
       for (let i = 1; i < size; i++) {
         const pos = trail[i];
-        if (pos.x === head.x && pos.y === head.y) return Collision.Snake;
-        if (pos.x === fruit.x && pos.y === fruit.y) return Collision.Fruit;
+        if (pos.match(head)) return Collision.Snake;
+        if (pos.match(fruit)) return Collision.Fruit;
       }
       return Collision.None;
     }
 
+    /** Creates a new snake with a specified size and positions it in the grid */
     private _createSnake(snakeSize: number): Snake {
       const gridSize = this._currentGridSize;
       if (snakeSize > gridSize - 1) {
@@ -269,6 +314,7 @@
       return new Snake(trail);
     }
 
+    /** Creates a new fruit with randomized positoin */
     _createFruit() {
       const randomize = () => Math.floor(Math.random() * this._currentGridSize);
       const trail = this._snake.trail;
@@ -277,13 +323,16 @@
       let x: number;
       let y: number;
 
+      // We need to make sure the randomized position of the fruit
+      // is not on a cell where the snake is currently on.
+      // So we randomize until we get a correct cell
       while (!isValidPosition) {
         x = randomize();
         y = randomize();
         isValidPosition = true;
         for (let i = 0; i < size; i++) {
           const cell = trail[i];
-          if (cell.x === x || cell.y === y) {
+          if (cell.match(x, y)) {
             isValidPosition = false;
           }
         }
@@ -292,11 +341,16 @@
       return new Coordinate(x, y);
     }
 
+    /** Invokes the draw command on the GameField. */
     private _draw() {
       this._field.draw(this._snake, this._fruit, this._currentGridSize);
     }
   }
 
+  /**
+   * Invokes the provided function on the next available animation frame.
+   * Calls the function immediately if requestAnimationFrame is not available.
+   */
   function getDrawFrame(cb: Function) {
     if ('requestAnimationFrame' in window) {
       global.requestAnimationFrame(() => cb());
@@ -305,12 +359,28 @@
     }
   }
 
+  // Makes the snake api public available in an "Snake" object.
   global.Snake = {
+    
+    /** Predefined Difficulties */
     Difficulty: Difficulty,
+
+    /** Initialize a new Snake game on an canvas element */
     init: (canvasElementOrId: HTMLCanvasElement | string, gridSize?: number): Game =>
       new Game(canvasElementOrId),
+
+    /** Start the initialized game */
     start: (game: Game, gridSize?: number, snakeSize?: number, difficulty?: Difficulty | number) =>
       game.start(gridSize, snakeSize, difficulty),
-    stop: (game: Game) => game.stop()
+
+    /** Restart the started game */
+    restart: (game: Game, gridSize?: number, snakeSize?: number, difficulty?: Difficulty | number) =>
+      game.restart(gridSize, snakeSize, difficulty),
+
+    /** Stop the provided game */
+    stop: (game: Game) => game.stop(),
+
+    /** Adjust the difficulty */
+    setDifficulty: (game: Game, difficulty: Difficulty | number) => game.difficulty = difficulty
   }
 })(window, document);
