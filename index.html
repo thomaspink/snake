@@ -25,10 +25,16 @@
     var snakeSize = 9;
     var canvasSize = gridSize * 20;
     var canvas = document.getElementById('field');
+
+    // Adjust the canvas size based on the grid size
+    // for an optiaml look
     canvas.width = canvasSize;
     canvas.height = canvasSize;
+
+    // Initialize a new game
     var game = Snake.init(canvas);
-    console.log(Snake.Difficulty.Hard);
+
+    // Start the game
     game.start(gridSize, snakeSize, Snake.Difficulty.Hard);
   </script>
 </body>
