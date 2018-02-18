@@ -1,0 +1,26 @@
+{
+  "name": "snake",
+  "version": "1.0.0",
+  "description": "Minigame Snake for the web",
+  "main": " ",
+  "scripts": {
+    "build": "rm -rf dist && tsc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thomaspink/snake.git"
+  },
+  "keywords": [
+    "snake",
+    "game"
+  ],
+  "author": "thomaspink",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/thomaspink/snake/issues"
+  },
+  "homepage": "https://github.com/thomaspink/snake#readme",
+  "devDependencies": {
+    "typescript": "^2.7.2"
+  }
+}
