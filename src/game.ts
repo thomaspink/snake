@@ -209,7 +209,7 @@
       fruitCollectedCb?: (points: number) => void,
       gameOverCb?: (points: number) => void
     ) {
-      this.stop();
+      if (this.started) this.stop();
       this.start(
         gridSize || this._currentGridSize,
         snakeSize || this._startSnakeSize,
