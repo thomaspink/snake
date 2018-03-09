@@ -12,12 +12,31 @@
       display: flex;
       justify-content: center;
       align-items: center;
+      color: #fff;
+      font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol", sans-serif;
+    }
+    .info {
+      font-size: 20px;
+    }
+    #points { 
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
   <div>
+    <div class="info">Points: <span id="points">0</span></div>
     <canvas id="field"></canvas>
+    <div class="controls">
+      <label for="difficulty">
+      Difficulty
+        <select id="difficulty">
+          <option value="Easy">Easy</option>
+          <option value="Medium" selected>Medium</option>
+          <option value="Hard">Hard</option>
+        </select>
+      </label>
+    </div>
   </div>
   <script src="dist/game.js"></script>
   <script>
@@ -25,6 +44,9 @@
     var snakeSize = 9;
     var canvasSize = gridSize * 20;
     var canvas = document.getElementById('field');
+    var pointsEl = document.getElementById('points');
+    var difficultyEl = document.getElementById('difficulty');
+    var difficulty = Snake.Difficulty.Medium;
 
     // Adjust the canvas size based on the grid size
     // for an optiaml look
@@ -35,7 +57,27 @@
     var game = Snake.init(canvas);
 
     // Start the game
-    game.start(gridSize, snakeSize, Snake.Difficulty.Hard);
+    game.start(gridSize, snakeSize, Snake.Difficulty.Medium,
+    
+    // Fruit collected
+    function(points) {
+      pointsEl.textContent = points + '';
+    },
+    
+    // Game over
+    function(points) {
+      restart();
+    });
+
+    difficultyEl.addEventListener('change', function(event) {
+      difficulty = Snake.Difficulty[difficultyEl.value];
+      restart();
+    });
+
+    function restart() {
+      game.restart(gridSize, snakeSize, difficulty);
+      pointsEl.textContent = '0';
+    }
   </script>
 </body>
 </html>

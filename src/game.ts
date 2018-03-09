@@ -137,11 +137,15 @@
     private _snake: Snake | null = null;
     private _fruit: Coordinate | null = null;
     private _runTimer: number | null = null;
-    private _currentGridSize: number = 21;
+    private _currentGridSize: number = DEFAULT_GRID_SIZE;
+    private _startSnakeSize: number = DEFAULT_SNAKE_SIZE;
     private _isAfterDrawing: boolean = true;
     private _velocityX: number = 1;
     private _velocityY: number = 0;
     private _difficulty: Difficulty | number = Difficulty.Medium;
+    private _fruitsCollected: number = 0;
+    private _fruitCollectedCb: (points: number) => void;
+    private _gameOverCb: (points: number) => void;
 
     /** Whether a game has been started */
     get started() {return this._snake !== null;}
@@ -175,28 +179,48 @@
     }
 
     /** Starts a new game */
-    start(gridSize: number = DEFAULT_GRID_SIZE, snakeSize: number = DEFAULT_SNAKE_SIZE,
-      difficulty: Difficulty | number = Difficulty.Medium) {
+    start(
+      gridSize: number = DEFAULT_GRID_SIZE,
+      snakeSize: number = DEFAULT_SNAKE_SIZE,
+      difficulty: Difficulty | number = Difficulty.Medium,
+      fruitCollectedCb?: (points: number) => void,
+      gameOverCb?: (points: number) => void
+    ) {
       if (this.started) {
         throw new Error(`Can't start a new game, snake is already running. Did you mean "restart"?`);
       }
       this._difficulty = difficulty;
+      this._fruitCollectedCb = fruitCollectedCb || function() {};
+      this._gameOverCb = gameOverCb || function() {};
       this._currentGridSize = gridSize;
+      this._startSnakeSize = snakeSize;
       this._snake = this._createSnake(snakeSize);
       this._fruit = this._createFruit();
+      this._fruitsCollected = 0;
 
       this._run();
     }
 
     /** Restart the game */
-    restart(gridSize?: number, snakeSize?: number, difficulty?: Difficulty | number) {
+    restart(
+      gridSize?: number,
+      snakeSize?: number,
+      difficulty?: Difficulty | number,
+      fruitCollectedCb?: (points: number) => void,
+      gameOverCb?: (points: number) => void
+    ) {
       this.stop();
-      this.start(gridSize, snakeSize, difficulty);
+      this.start(
+        gridSize || this._currentGridSize,
+        snakeSize || this._startSnakeSize,
+        difficulty || this._difficulty,
+        fruitCollectedCb || this._fruitCollectedCb,
+        gameOverCb || this._gameOverCb);
     }
 
     /** Stops and resets the game that is currently running */
     stop() {
-      if (this.started) {
+      if (!this.started) {
         throw new Error(`Can't stop, no game is running!`);
       }
       this._softStop();
@@ -254,10 +278,13 @@
       const shouldGrow = collision === Collision.Fruit;
       if (shouldGrow) {
         this._fruit = this._createFruit();
+        this._fruitsCollected++;
+        if (this._fruitCollectedCb) this._fruitCollectedCb(this._fruitsCollected);
       }
       this._moveSnake(shouldGrow);
       if (collision === Collision.Snake) {
         this._softStop();
+        if (this._gameOverCb) this._gameOverCb(this._fruitsCollected);
       } else {
         this._runTimer = setTimeout(() => this._run(), this.difficulty);
       }
